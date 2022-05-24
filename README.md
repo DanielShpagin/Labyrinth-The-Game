@@ -1,1 +1,1 @@
-# Labyrinth-The-Game
+# Labyrinth, The Game
