@@ -22,7 +22,7 @@
         <script src='https://code.jquery.com/jquery-2.1.0.js'></script>
 
         <style>
-            html, body {
+            html,body{
                 overflow: hidden;
                 width: 100%;
                 height: 100%;
@@ -32,7 +32,7 @@
                 height: 100%;		
                 margin: 0;
             }
-            .whole {
+            .whole{
                 max-width: 1000pt;
                 height: 100%;		
                 margin: auto;
@@ -48,7 +48,16 @@
                 width: 100%;
                 height: 100%;
                 touch-action: none;
-                background-color: black;
+            }
+            #win{
+                color:#ffffff;
+                font-family: "system-ui";
+                font-size: 30px;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-right: -50%;
+                transform: translate(-50%, -50%);
             }
             .myButton {
                 box-shadow:inset 0px 0px 0px 0px Gray;
@@ -82,6 +91,8 @@
         </div>
         <div id="box"><canvas id="canvas"></canvas></div>
     </div>
+    <a id="win">You won, congratulations!</a>
+
     <script>
         var canvas = document.getElementById("canvas");
 
@@ -97,9 +108,24 @@
         var scene = null;
         var sceneToRender = null;
         var shadowGenerator = null;
-        var sphere = null;
+
+        var character = null;
+        var foe = null;
         var xy = null;
-        var labSize = 32;
+
+        var div = 0.2;
+        var labSize = 24;
+
+        var enemies = [];
+        var obj;
+
+        var tap = false;
+        var tap2 = false;
+        var tap3 = false;
+
+        //let startX;
+        //let startY;
+
         var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
 
         class Labyrinth {
@@ -118,8 +144,6 @@
                 for (var i = 0; i < this.height*this.width; i++) {
                     this.labMassive.push(0);
                 }
-
-                console.log(w, h, canvas.height, canvas.width);
             }
             set(x,y,v) {
                 if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
@@ -339,7 +363,6 @@
                 for (var i = 0; i < lab.height; i++) {
                     for (var j = 0; j < lab.width; j++) {
                         var c = lab.get(j, i);
-
                         if (c === 1) {
                             var color = new BABYLON.Color3(0.98, 1, 0);
                             var faceColors = new Array(6);
@@ -373,12 +396,11 @@
                 scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
 
                 const camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 8, 40, new BABYLON.Vector3(0, 0, 0));
-                camera.attachControl(canvas, true);
+                camera.attachControl(canvas, false);
                 camera.inputs.attached.keyboard.detachControl();
+                camera.detachControl(canvas);
 
                 lab = lab.complexLabyrinth();
-
-                console.log(lab);
 
                 xy = [0, lab.enterY];
                 player = new Player(xy[0], xy[1]);
@@ -429,28 +451,93 @@
                 this.x = x;
                 this.y = y;
             }
-            setDirection(key) {
-                var keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
-                var letters = ["d", "s", "a", "w"];
-                xy = [[this.x+1, this.y], [this.x, this.y+1], [this.x-1, this.y], [this.x, this.y-1]];
+            drawPlayer() {
+                character = BABYLON.MeshBuilder.CreateSphere("character", {});
 
-                for (var i = 0; i < 4; i++) {
-                    if (key === keys[i] || key === letters[i]) {
-                        if (lab.get(xy[i][0], xy[i][1]) === 0) {
-                            sphere.z = xy[i][0];
-                            sphere.x = xy[i][1];
-                        }
-                    }
+                character.position.x = this.y-lab.height/2;
+                character.position.z = this.x-lab.width/2;
+            }
+        }
+
+        class Enemy {
+            constructor() {
+                this.number = 0;
+
+                this.dx = 0;
+                this.dz = 0;
+
+                this.sx = 0;
+                this.sz = 0;
+
+                this.halfX = 0.5;
+                this.halfZ = 0.5;
+
+                this.foe;
+            }
+            oneStep() {
+                this.sx = this.foe.position.x;
+                this.sz = this.foe.position.z;
+
+                var x = Math.floor(this.sz+lab.width/2+0.5+this.dz*3);
+                var y = Math.floor(this.sx+lab.height/2+0.5+this.dx*3);
+
+                if (lab.get(x, y) === 1) {
+                    this.generateCoords();
+                } else {
+                    this.foe.position.x += this.dx;
+                    this.foe.position.z += this.dz;
                 }
             }
-            smoothMovement(xy, i) {
-                console.log(xy[i][0], xy[0][1]);
-            }
-            drawPlayer() {
-                sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {});
+            generateCoords() {
+                var x = 0;
+                var z = 0;
 
-                sphere.position.x = this.y-lab.height/2;
-                sphere.position.z = this.x-lab.width/2;
+                do {
+                    x = Math.floor(Math.random()*3)-1;
+                    z = Math.floor(Math.random()*3)-1;
+
+                    if ((x === 0 || z === 0) && (x !== 0 || z !== 0)) break;
+                } while (true);
+
+                this.dx = x*div;
+                this.dz = z*div;
+            }
+            setPosition() {
+                var rmin = 10000;
+                var obj;
+                const margin = 2;
+
+                this.number++;
+
+                do {
+                    this.sx = Math.floor(Math.random() * (lab.width-margin*2))-lab.width/2+margin;
+                    this.sz = Math.floor(Math.random() * (lab.height-margin*2))-lab.height/2+margin;
+
+                    if (lab.get(this.sz+lab.width/2, this.sx+lab.height/2) === 0) break;
+                } while (true);
+
+                for (var i = 0; i < enemies.length; i++) {
+                    obj = enemies[i];
+                    var r = Math.sqrt((this.sx-obj.sx)*(this.sx-obj.sx)+(this.sz-obj.sz)*(this.sz-obj.sz));
+                    if (r < rmin && obj !== this) {
+                        rmin = r;
+                    }
+                }
+
+                if (rmin >= 6 || this.number >= 10) {
+                    this.foe.position.x = this.sx;
+                    this.foe.position.z = this.sz;
+                    console.log(rmin, this.sx, this.sz);
+                } else this.setPosition();
+            }
+            drawEnemy() {
+                var material = new BABYLON.StandardMaterial(scene);
+                material.alpha = 1;
+                material.diffuseColor = new BABYLON.Color3(1, 0, 0);
+                this.foe = BABYLON.MeshBuilder.CreateSphere("foe", {});
+                this.foe.material = material;
+
+                this.setPosition();
             }
         }
 
@@ -473,7 +560,6 @@
             }
 
             lab.clearLabyrinth();
-            player.setDirection(key);
         });
         $('#refresh').click(function () {
             scene.dispose();
@@ -485,18 +571,86 @@
         $('#show').click(function () {
             lab.drawShortPath();
         });
-        var intervalId = setInterval(() => {
-            if (sphere) {
-                var dx = player.y-lab.height/2-sphere.position.x;
-                var dz = player.x-lab.width/2-sphere.position.z;
 
-                if (dz > 0.2) dz = 0.2;
-                if (dz < -0.2) dz = -0.2;
-                if (dx > 0.2) dx = 0.2;
-                if (dx < -0.2) dx = -0.2;
+        setInterval(() => {
+            if (character) {
+                var cx = character.position.x;
+                var cz = character.position.z;
 
-                sphere.position.x += dx;
-                sphere.position.z += dz;
+                var dx = player.y-lab.height/2-cx;
+                var dz = player.x-lab.width/2-cz;
+
+                var x;
+                var z;
+
+                if (dz > div) dz = div;
+                if (dz < -div) dz = -div;
+                if (dx > div) dx = div;
+                if (dx < -div) dx = -div;
+
+                character.position.x += dx;
+                character.position.z += dz;
+
+                for (var i = 0; i < enemies.length; i++) {
+                    obj = enemies[i];
+                    x = obj.foe.position.x-cx;
+                    z = obj.foe.position.z-cz;
+
+                    if (Math.abs(x*x+z*z) <= div) {
+                        character.position.x = lab.enterY-lab.width/2;
+                        character.position.z = -lab.height/2;
+
+                        player.x = 0;
+                        player.y = lab.enterY;
+                    }
+                }
+
+                if (cx === lab.exitY-lab.height/2 && cz === lab.width-1-lab.width/2) $('#win').show();
+            }
+        }, 30);
+
+        setInterval(() => {
+            if (enemies.length) {
+                var obj1;
+                var obj2;
+
+                var x1;
+                var z1;
+
+                var x2;
+                var z2;
+
+                for (var i = 0; i < enemies.length; i++) {
+                    obj = enemies[i];
+                    obj.oneStep();
+                    if (obj.dx === 0 && obj.dz === 0) obj.generateCoords();
+                }
+
+                for (var i = 0; i < enemies.length; i++) {
+                    obj1 = enemies[i];
+                    x1 = obj1.foe.position.x;
+                    z1 = obj1.foe.position.z;
+
+                    for (var j = 0; j < i; j++) {
+                        if (i !== j) {
+                            obj2 = enemies[j];
+                            x2 = obj2.foe.position.x;
+                            z2 = obj2.foe.position.z;
+
+                            if ((x1-x2)*(x1-x2)+(z1-z2)*(z1-z2) <= 1) {
+                                if ((x2-x1)*obj1.dx+(z2-z1)*obj1.dz > 0) {
+                                    obj1.dx *= -1;
+                                    obj1.dz *= -1;
+                                }
+
+                                if ((x1-x2)*obj2.dx+(z1-z2)*obj2.dz > 0) {
+                                    obj2.dx *= -1;
+                                    obj2.dz *= -1;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }, 50);
 
@@ -505,7 +659,6 @@
                 try {
                     return createDefaultEngine();
                 } catch(e) {
-                    console.log("the available createEngine function failed. Creating the default engine instead");
                     return createDefaultEngine();
                 }
             }
@@ -514,10 +667,85 @@
                 window.engine = await asyncEngineCreation();
                 startRenderLoop(engine, canvas);
             }
-            console.log(engine);
             if (!engine) throw 'engine should not be null.';
-            
+
             window.scene = lab.createScene();
+
+            enemies = [];
+
+            for (var i = 0; i < 10; i++) {
+                enemies.push(new Enemy());
+
+                obj = enemies[i];
+                obj.drawEnemy();
+            }
+
+            for (var i = 0; i < enemies.length; i++) {
+                obj = enemies[i];
+                obj.generateCoords();
+            }
+
+            scene.onPointerObservable.add((pointerInfo) => {
+                switch (pointerInfo.type) {
+                    case BABYLON.PointerEventTypes.POINTERDOWN:
+                        tap = true;
+                        console.log('down');
+                        break;
+                    case BABYLON.PointerEventTypes.POINTERUP:
+                        tap = false;
+                        console.log('up');
+                        break;
+                }
+
+                if (tap) {
+                    lab.clearLabyrinth();
+
+                    var mx = pointerInfo.event.movementX;
+                    var my = pointerInfo.event.movementY;
+
+                    var cx = character.position.x;
+                    var cz = character.position.z;
+
+                    var dx = player.y-lab.height/2-cx;
+                    var dz = player.x-lab.width/2-cz;
+
+                    xy = [[player.x+1, player.y], [player.x-1, player.y], [player.x, player.y-1], [player.x, player.y+1]];
+
+                    if (dx*dx+dz*dz <= div) {
+                        if (Math.abs(mx) > Math.abs(my)) {
+                            if (mx > 0) {
+                                if (lab.get(xy[0][0], xy[0][1]) === 0) {
+                                    player.x = xy[0][0];
+                                    player.y = xy[0][1];
+                                }
+                            }
+
+                            if (mx < 0) {
+                                if (lab.get(xy[1][0], xy[1][1]) === 0) {
+                                    player.x = xy[1][0];
+                                    player.y = xy[1][1];
+                                }
+                            }
+                        } else {
+                            if (my < 0) {   
+                                if (lab.get(xy[2][0], xy[2][1]) === 0) {
+                                    player.x = xy[2][0];
+                                    player.y = xy[2][1];
+                                }
+                            }
+
+                            if (my > 0) {
+                                if (lab.get(xy[3][0], xy[3][1]) === 0) {
+                                    player.x = xy[3][0];
+                                    player.y = xy[3][1];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            $('#win').hide();
         };
         initFunction().then(() => {
             sceneToRender = scene;               
