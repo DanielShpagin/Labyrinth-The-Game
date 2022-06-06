@@ -381,10 +381,12 @@
                     var width = box.clientWidth;
                     var height = box.clientHeight;
 
-                    if(!camera){
-                        camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 8, height/20, new BABYLON.Vector3(0, 0, 0));
+                    if(!camera) {
+                        if (width > height) camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 8, width/35, new BABYLON.Vector3(0, 0, 0));
+                        if (width < height) camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 8, height/30, new BABYLON.Vector3(0, 0, 0));
                     }
-                    camera.radius = height/20;
+                    if (width > height) camera.radius = width/35;
+                    if (width < height) camera.radius = height/30;
 
                     camera.attachControl(canvas, false);
                     camera.inputs.attached.keyboard.detachControl();
