@@ -169,8 +169,7 @@
                     }
                 }
                 generateObstacle() {
-                    //50000
-                    for (var i = 0; i < 0; i++) {
+                    for (var i = 0; i < 50000; i++) {
                         var n = 0;
                         this.randomX = Math.floor(Math.random() * (this.width - 2)) + 1;
                         this.randomY = Math.floor(Math.random() * (this.height - 2)) + 1;
@@ -680,12 +679,12 @@
 
                 enemies = [];
 
-                /*for (var i = 0; i < 10; i++) {
+                for (var i = 0; i < 10; i++) {
                     enemies.push(new Enemy());
 
                     obj = enemies[i];
                     obj.drawEnemy();
-                }*/
+                }
 
                 for (var i = 0; i < enemies.length; i++) {
                     obj = enemies[i];
