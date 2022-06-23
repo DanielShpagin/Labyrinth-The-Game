@@ -105,6 +105,10 @@
             var div1 = 0.1;
             var div2 = 0.2;
             var labSize = 24;
+            var refresh = true;
+
+            var eRadius = 0.8;
+            var complexity = 1;
 
             var enemies = [];
             var obj;
@@ -349,8 +353,8 @@
                             box.position.x = x-this.width/2;
                             box.position.z = y-this.height/2;
                             box.position.y = -0.5;
-                            //box.receiveShadows = true;
-                            //shadowGenerator.getShadowMap().renderList.push(box);
+                            /*box.receiveShadows = true;
+                            shadowGenerator.getShadowMap().renderList.push(box);*/
                         }
                     }
                 }
@@ -721,13 +725,12 @@
                     } else this.setPosition();
                 }
                 drawEnemy() {
-                    var diameter = 0.8;
                     var material = new BABYLON.StandardMaterial(scene);
 
                     material.alpha = 1;
                     material.diffuseColor = new BABYLON.Color3(1, 0, 0);
 
-                    this.foe = BABYLON.MeshBuilder.CreateSphere("foe", {diameterX: diameter, diameterY: diameter, diameterZ: diameter});
+                    this.foe = BABYLON.MeshBuilder.CreateSphere("foe", {diameterX: eRadius, diameterY: eRadius, diameterZ: eRadius});
                     this.foe.material = material;
 
                     this.setPosition();
@@ -783,13 +786,34 @@
                         if (Math.sqrt(x*x+z*z) < 0.7) {
                             character.position.x = lab.enter-lab.width/2;
                             character.position.z = -lab.height/2;
+
+                            if (complexity >= 0.5) {
+                                complexity -= 0.05;
+                                div1 *= complexity;
+                            }
                         }
                     }
 
                     x = cx-lab.exit+lab.height/2;
                     z = cz-lab.width/2+1;
 
-                    if (Math.sqrt(x*x+z*z) <= 0.3) $('#win').show();
+                    if (Math.sqrt(x*x+z*z) <= 0.2) {
+                        $('#win').show();
+                        if (refresh) {
+                            setTimeout((() => {
+                                scene.dispose();
+                                camera = null;
+                                complexity += 0.5;
+                                div1 *= complexity;
+
+                                initFunction().then(() => {
+                                    sceneToRender = scene;
+                                });
+                            }), 10000);
+
+                            refresh = false;
+                        }
+                    }
                 }
             }, 30);
 
@@ -853,7 +877,7 @@
 
                                 var scl = ex*(vx1-vx2)+ez*(vz1-vz2);
 
-                                if (length <= 0.8 && scl < 0) {
+                                if (length <= eRadius && scl < 0) {
                                     obj1.dx += ex;
                                     obj1.dz += ez;
 
@@ -863,17 +887,8 @@
                             }
                         }
                     }
-
-                    /*for (var i = 0; i < enemies.length; i++) {
-                        obj = enemies[i];
-                        if (obj.hp <= 0) {
-                            obj.setPosition();
-                            obj.hp = 100;
-                        }
-                    }*/
                 }
             }, 30);
-            //30
 
             window.initFunction = async function() {
                 var asyncEngineCreation = async function() {
@@ -894,7 +909,9 @@
                 window.scene = lab.createScene();
 
                 enemies = [];
+                refresh = true;
 
+                //8
                 for (var i = 0; i < 8; i++) {
                     enemies.push(new Enemy());
 
@@ -930,6 +947,7 @@
 
                 $('#win').hide();
             };
+
             initFunction().then(() => {
                 sceneToRender = scene;
             });
