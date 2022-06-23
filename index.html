@@ -29,7 +29,7 @@
                 margin: 0;
                 padding: 0;
                 background-color: black;
-                height: 100%;		
+                height: 100%;
                 margin: 0;
             }
             .whole{
@@ -102,13 +102,20 @@
             var foe = null;
             var xy = null;
  
-            var div = 0.2;
+            var div1 = 0.1;
+            var div2 = 0.2;
             var labSize = 24;
 
             var enemies = [];
             var obj;
 
             var tap = false;
+
+            var bullDirect = [false, false, false, false];
+            var direct = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+            var directX;
+            var directZ;
 
             var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
 
@@ -122,8 +129,8 @@
                     this.stack = [];
                     this.shortPath = [];
 
-                    this.enterY = Math.floor(Math.random() * (this.width - 2)) + 1;
-                    this.exitY = Math.floor(Math.random() * (this.height - 2)) + 1;
+                    this.enter = Math.floor(Math.random() * (this.width - 2)) + 1;
+                    this.exit = Math.floor(Math.random() * (this.height - 2)) + 1;
 
                     for (var i = 0; i < this.height*this.width; i++) {
                         this.labMassive.push(0);
@@ -140,8 +147,8 @@
                     } else return 1;
                 }
                 makeEnterAndExit() {
-                    this.set(0, this.enterY, 0);
-                    this.set(this.width-1, this.exitY, 0);
+                    this.set(0, this.enter, 0);
+                    this.set(this.width-1, this.exit, 0);
                 }
                 makeEdge() {
                     for (var i = 0; i < this.width; i++) {
@@ -169,41 +176,45 @@
                     }
                 }
                 generateObstacle() {
+                    //50000
+                    var randomX;
+                    var randomY;
+
                     for (var i = 0; i < 50000; i++) {
                         var n = 0;
-                        this.randomX = Math.floor(Math.random() * (this.width - 2)) + 1;
-                        this.randomY = Math.floor(Math.random() * (this.height - 2)) + 1;
+                        randomX = Math.floor(Math.random() * (this.width - 2)) + 1;
+                        randomY = Math.floor(Math.random() * (this.height - 2)) + 1;
 
-                        if (this.get(this.randomX-1, this.randomY) !== 0) {
+                        if (this.get(randomX-1, randomY) !== 0) {
                             n++;
-                            if (this.get(this.randomX+1, this.randomY-1) !== 0 || this.get(this.randomX+1, this.randomY+1) !== 0) {
+                            if (this.get(randomX+1, randomY-1) !== 0 || this.get(randomX+1, randomY+1) !== 0) {
                                 n++;
                             }
                         }
 
-                        if (this.get(this.randomX+1, this.randomY) !== 0) {
+                        if (this.get(randomX+1, randomY) !== 0) {
                             n++;
-                            if (this.get(this.randomX-1, this.randomY+1) !== 0 || this.get(this.randomX-1, this.randomY-1) !== 0) {
+                            if (this.get(randomX-1, randomY+1) !== 0 || this.get(randomX-1, randomY-1) !== 0) {
                                 n++;
                             }
                         }
 
-                        if (this.get(this.randomX, this.randomY+1) !== 0) {
+                        if (this.get(randomX, randomY+1) !== 0) {
                             n++;
-                            if (this.get(this.randomX-1, this.randomY-1) !== 0 || this.get(this.randomX+1, this.randomY-1) !== 0) {
+                            if (this.get(randomX-1, randomY-1) !== 0 || this.get(randomX+1, randomY-1) !== 0) {
                                 n++;
                             }
                         }
 
-                        if (this.get(this.randomX, this.randomY-1) !== 0) {
+                        if (this.get(randomX, randomY-1) !== 0) {
                             n++;
-                            if (this.get(this.randomX-1, this.randomY+1) !== 0 || this.get(this.randomX+1, this.randomY+1) !== 0) {
+                            if (this.get(randomX-1, randomY+1) !== 0 || this.get(randomX+1, randomY+1) !== 0) {
                                 n++;
                             }
                         }
 
                         if (n === 1) {
-                            this.set(this.randomX, this.randomY, 1);
+                            this.set(randomX, randomY, 1);
                         }
                     }
                 }
@@ -217,7 +228,7 @@
                 scanLabyrinth() {
                     this.clearLabyrinth();
 
-                    xy = [0, this.enterY];
+                    xy = [0, this.enter];
                     var k = 1000;
 
                     this.stack = [];
@@ -248,14 +259,14 @@
                             this.set(xy[0], xy[1]-1, k++);
                         }
 
-                        if (xy[0] === this.width-1 && xy[1] === this.exitY) return true;
+                        if (xy[0] === this.width-1 && xy[1] === this.exit) return true;
                     }
 
                     return false;   
                 }
                 findShortestPath() {
-                    xy = [this.width-1, this.exitY];
-                    var number = this.get(this.width-1, this.exitY);
+                    xy = [this.width-1, this.exit];
+                    var number = this.get(this.width-1, this.exit);
 
                     this.shortPath = [];
                     this.shortPath.push(xy);
@@ -300,7 +311,7 @@
                         }
 
                         this.shortPath.push(xy);
-                        if (xy[0] === 0 && xy[1] === this.enterY) break;
+                        if (xy[0] === 0 && xy[1] === this.enter) break;
                     }
                 }
                 makeLonger() {
@@ -351,9 +362,11 @@
                                 var color = new BABYLON.Color3(0.98, 1, 0);
                                 var faceColors = new Array(6);
                                 faceColors.fill(color);
+
                                 var box = BABYLON.MeshBuilder.CreateBox("box", {faceColors});
                                 box.position.x = i-this.width/2;
                                 box.position.z = j-lab.height/2;
+
                                 //box.receiveShadows = true;
                                 //shadowGenerator.addShadowCaster(box);
                                 //shadowGenerator.getShadowMap().renderList.push(box);
@@ -370,6 +383,7 @@
                         box.position.x = this.shortPath[i][1]-this.width/2;
                         box.position.z = this.shortPath[i][0]-this.height/2;
                         box.position.y = -0.5;
+
                         //box.receiveShadows = true;
                         //shadowGenerator.addShadowCaster(box);
                         //shadowGenerator.getShadowMap().renderList.push(box);
@@ -397,8 +411,6 @@
                     camera.attachControl(canvas, false);
                     camera.inputs.attached.keyboard.detachControl();
                     camera.detachControl(canvas);
-
-                    console.log(width, height, canvas.width, canvas.height, camera);
                 }
                 createScene() {
                     var scene = new BABYLON.Scene(engine);
@@ -408,7 +420,7 @@
 
                     lab = lab.complexLabyrinth();
 
-                    xy = [0, lab.enterY];
+                    xy = [0, lab.enter];
                     player = new Player(xy[0], xy[1]);
 
                     var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(-1, -2, -1), scene);
@@ -457,17 +469,96 @@
                     this.x = x;
                     this.y = y;
                 }
+                keydown(key) {
+                    var keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
+                    var letters = ["d", "s", "a", "w"];
+                    var directions = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+                    var x;
+                    var y;
+
+                    for (var i = 0; i < 4; i++) {
+                        if (key === keys[i] || key === letters[i]) {
+                            this.movePlayer(directions[i][1], directions[i][0]);
+
+                            bullDirect[i] = true;
+                        }
+                    }
+
+                    lab.clearLabyrinth();
+                }
+                movePlayer(dx, dz) {
+                    var x = 0;
+                    var z = 0;
+
+                    var sx = 0;
+                    var sz = 0;
+
+                    var px = 0;
+                    var pz = 0;
+
+                    var xs = 0;
+                    var ys = 0;
+
+                    var radius = 0.49;
+                    var pi = 0;
+                    var length = 0;
+
+                    var len = Math.sqrt(dx*dx+dz*dz);
+
+                    if (len > 0) {
+                        character.position.x += div2*dx/len;
+                        character.position.z += div2*dz/len;
+
+                        for (var j = 0; j < 10; j++) {
+                            x = character.position.x;
+                            z = character.position.z;
+
+                            for (var i = 0; i < 360; i += 10) {
+                                pi = i*Math.PI/180;
+
+                                px = radius*Math.sin(pi);
+                                pz = radius*Math.cos(pi);
+
+                                xs = Math.floor(z+pz+lab.width/2+radius);
+                                ys = Math.floor(x+px+lab.height/2+radius);
+
+                                if (lab.get(xs, ys) === 1) {
+                                    sx -= px;
+                                    sz -= pz;
+                                }
+                            }
+
+                            length = Math.sqrt(sx*sx+sz*sz);
+
+                            if (length !== 0) {
+                                sx /= length;
+                                sz /= length;
+
+                                character.position.x += sx*div2/10;
+                                character.position.z += sz*div2/10;
+                            }
+                        }
+                    }
+                }
                 drawPlayer() {
                     character = BABYLON.MeshBuilder.CreateSphere("character", {});
 
-                    character.position.x = this.y-lab.height/2;
-                    character.position.z = this.x-lab.width/2;
+                    character.position.x = lab.enter-lab.height/2;
+                    character.position.z = -lab.width/2;
                 }
             }
 
             class Enemy {
                 constructor() {
                     this.number = 0;
+                    this.num = false;
+                    this.rd = 5;
+                    this.hp = 100;
+                    this.shift = (Math.floor(Math.random()*3)-1)/1000;
+
+                    this.dx1 = 0;
+                    this.dz1 = 0;
 
                     this.dx = 0;
                     this.dz = 0;
@@ -475,43 +566,128 @@
                     this.sx = 0;
                     this.sz = 0;
 
-                    this.halfX = 0.5;
-                    this.halfZ = 0.5;
-
                     this.foe;
                 }
                 oneStep() {
+                    this.rd += 0.001;
+
                     this.sx = this.foe.position.x;
                     this.sz = this.foe.position.z;
 
-                    var x = Math.floor(this.sz+lab.width/2+0.5+this.dz*3);
-                    var y = Math.floor(this.sx+lab.height/2+0.5+this.dx*3);
-
-                    if (lab.get(x, y) === 1) {
-                        this.generateCoords();
-                    } else {
-                        this.foe.position.x += this.dx;
-                        this.foe.position.z += this.dz;
-                    }
-                }
-                generateCoords() {
                     var x = 0;
                     var z = 0;
 
-                    do {
-                        x = Math.floor(Math.random()*3)-1;
-                        z = Math.floor(Math.random()*3)-1;
+                    var sx = 0;
+                    var sz = 0;
 
-                        if ((x === 0 || z === 0) && (x !== 0 || z !== 0)) break;
-                    } while (true);
+                    var px = 0;
+                    var pz = 0;
 
-                    this.dx = x*div;
-                    this.dz = z*div;
+                    var xs = 0;
+                    var ys = 0;
+
+                    var radius = 0.39;
+                    var pi = 0;
+                    var length = 0;
+
+                    var nx = Math.floor(this.sx+0.5)-this.sx;
+                    var nz = Math.floor(this.sz+0.5)-this.sz;
+
+                    var len = Math.sqrt(this.dx*this.dx+this.dz*this.dz);
+                    var rd = Math.floor(Math.random() * this.rd);
+
+                    if (len > 0) {
+                        this.foe.position.x += div1*this.dx/len+this.shift;
+                        this.foe.position.z += div1*this.dz/len+this.shift;
+
+                        for (var j = 0; j < 10; j++) {
+                            x = this.foe.position.x;
+                            z = this.foe.position.z;
+
+                            for (var i = 0; i < 360; i += 10) {
+                                pi = i*Math.PI/180;
+
+                                px = radius*Math.sin(pi);
+                                pz = radius*Math.cos(pi);
+
+                                xs = Math.floor(z+pz+lab.width/2+radius);
+                                ys = Math.floor(x+px+lab.height/2+radius);
+
+                                if (lab.get(xs, ys) === 1) {
+                                    sx -= px;
+                                    sz -= pz;
+                                }
+                            }
+
+                            length = Math.sqrt(sx*sx+sz*sz);
+
+                            if (length !== 0) {
+                                sx /= length;
+                                sz /= length;
+
+                                this.foe.position.x += sx*div1/10;
+                                this.foe.position.z += sz*div1/10;
+
+                                this.generatePhysicalDirection(sx, sz, this.dx/div1, this.dz/div1);
+                            }
+                        }
+                    }
+                }
+                /*reverseStroke() {
+                    var x = this.dx;
+                    var z = this.dz;
+
+                    var number = Math.floor(Math.random() * 3)-1;
+
+                    if (number === -1) {
+                        [x, z] = [z, -x];
+                    }
+
+                    if (number === 1) {
+                        [x, z] = [-z, x];
+                    }
+
+                    this.dx = x;
+                    this.dz = z;
+                }*/
+                generateDirection() {
+                    this.dx1 = this.dx;
+                    this.dz1 = this.dz;
+
+                    var x = 0;
+                    var z = 0;
+
+                    x = Math.random()*3-1;
+                    z = Math.random()*3-1;
+
+                    this.dx = x*div1;
+                    this.dz = z*div1;
+
+                    if (this.dx1*this.dx+this.dz1*this.dz !== 0) {
+                        this.dx = this.dx1;
+                        this.dz = this.dz1;
+                    }
+                }
+                generatePhysicalDirection(ex, ez, vx, vz) {
+                    var scal = ex*vx+ez*vz;
+
+                    if (scal < 0) {
+                        var x = vx-ex*scal*2;
+                        var z = vz-ez*scal*2;
+
+                        this.dx = x*div1;
+                        this.dz = z*div1;
+                    }
                 }
                 setPosition() {
                     var rmin = 10000;
                     var obj;
                     const margin = 2;
+
+                    var x;
+                    var z;
+
+                    var number = 0;
 
                     this.number++;
 
@@ -519,7 +695,10 @@
                         this.sx = Math.floor(Math.random() * (lab.width-margin*2))-lab.width/2+margin;
                         this.sz = Math.floor(Math.random() * (lab.height-margin*2))-lab.height/2+margin;
 
-                        if (lab.get(this.sz+lab.width/2, this.sx+lab.height/2) === 0) break;
+                        x = this.sx-character.position.x;
+                        z = this.sz-character.position.z;
+
+                        if (lab.get(this.sz+lab.width/2, this.sx+lab.height/2) === 0 && Math.sqrt(x*x+z*z) >= 5) break;
                     } while (true);
 
                     for (var i = 0; i < enemies.length; i++) {
@@ -530,16 +709,25 @@
                         }
                     }
 
+                    do {
+                        number++;
+
+                        if (Math.sqrt(x*x+z*z) >= 5 || number === 5) break;
+                    } while (true);
+
                     if (rmin >= 6 || this.number >= 10) {
                         this.foe.position.x = this.sx;
                         this.foe.position.z = this.sz;
                     } else this.setPosition();
                 }
                 drawEnemy() {
+                    var diameter = 0.8;
                     var material = new BABYLON.StandardMaterial(scene);
+
                     material.alpha = 1;
                     material.diffuseColor = new BABYLON.Color3(1, 0, 0);
-                    this.foe = BABYLON.MeshBuilder.CreateSphere("foe", {});
+
+                    this.foe = BABYLON.MeshBuilder.CreateSphere("foe", {diameterX: diameter, diameterY: diameter, diameterZ: diameter});
                     this.foe.material = material;
 
                     this.setPosition();
@@ -547,25 +735,20 @@
             }
 
             var lab = new Labyrinth(labSize, labSize);
-            var player = new Player(0, lab.enterY);
+            var player = new Player(0, lab.enter);
 
             $('body').keydown(function (event) {
-                var key = event.key;
-                var keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
-                var letters = ["d", "s", "a", "w"];
-                xy = [[player.x+1, player.y], [player.x, player.y+1], [player.x-1, player.y], [player.x, player.y-1]];
+                player.keydown(event.key);
+            });
 
+            $('body').keyup(function () {
                 for (var i = 0; i < 4; i++) {
-                    if (key === keys[i] || key === letters[i]) {
-                        if (lab.get(xy[i][0], xy[i][1]) === 0) {
-                            player.x = xy[i][0];
-                            player.y = xy[i][1];
-                        }
+                    if (bullDirect[i]) {
+                        bullDirect[i] = false;
                     }
                 }
-
-                lab.clearLabyrinth();
             });
+
             $('#refresh').click(function () {
                 scene.dispose();
                 camera = null;
@@ -573,62 +756,77 @@
                     sceneToRender = scene;
                 });
             });
+
             $('#show').click(function () {
                 lab.drawShortPath();
             });
 
             setInterval(() => {
                 if (character) {
-                    var cx = Math.floor(character.position.x);
-                    var cz = Math.floor(character.position.z);
-
-                    var dx = player.y-lab.height/2-cx;
-                    var dz = player.x-lab.width/2-cz;
+                    var cx = character.position.x;
+                    var cz = character.position.z;
 
                     var x;
                     var z;
 
-                    if (dz > div) dz = div;
-                    if (dz < -div) dz = -div;
-                    if (dx > div) dx = div;
-                    if (dx < -div) dx = -div;
-
-                    /*character.position.x += dx;
-                    character.position.z += dz;*/
-
-                    for (var i = 0; i < enemies.length; i++) {
-                        obj = enemies[i];
-                        x = obj.foe.position.x-cx;
-                        z = obj.foe.position.z-cz;
-
-                        if (Math.abs(x*x+z*z) <= div) {
-                            character.position.x = lab.enterY-lab.width/2;
-                            character.position.z = -lab.height/2;
-
-                            player.x = 0;
-                            player.y = lab.enterY;
+                    for (var i = 0; i < 4; i++) {
+                        if (bullDirect[i]) {
+                            player.movePlayer(direct[i][1], direct[i][0]);
                         }
                     }
 
-                    if (cx === lab.exitY-lab.height/2 && cz === lab.width-1-lab.width/2) $('#win').show();
+                    for (var i = 0; i < enemies.length; i++) {
+                        obj = enemies[i];
+                        x = cx-obj.foe.position.x;
+                        z = cz-obj.foe.position.z;
+
+                        if (Math.sqrt(x*x+z*z) < 0.7) {
+                            character.position.x = lab.enter-lab.width/2;
+                            character.position.z = -lab.height/2;
+                        }
+                    }
+
+                    x = cx-lab.exit+lab.height/2;
+                    z = cz-lab.width/2+1;
+
+                    if (Math.sqrt(x*x+z*z) <= 0.3) $('#win').show();
                 }
             }, 30);
 
             setInterval(() => {
                 if (enemies.length) {
-                    var obj1;
-                    var obj2;
+                    var obj1 = null;
+                    var obj2 = null;
+                    var obj = null;
 
-                    var x1;
-                    var z1;
+                    var x1 = 0;
+                    var z1 = 0;
+                    
+                    var x2 = 0;
+                    var z2 = 0;
 
-                    var x2;
-                    var z2;
+                    var ex = 0;
+                    var ez = 0;
+
+                    var ax = 0;
+                    var az = 0;
+
+                    var vx1 = 0;
+                    var vz1 = 0;
+
+                    var vx2 = 0;
+                    var vz2 = 0;
+
+                    var vcx1 = 0;
+                    var vcz1 = 0;
+
+                    var vcx2 = 0;
+                    var vcz2 = 0;
 
                     for (var i = 0; i < enemies.length; i++) {
                         obj = enemies[i];
                         obj.oneStep();
-                        if (obj.dx === 0 && obj.dz === 0) obj.generateCoords();
+                        if (obj.dx === 0 && obj.dz === 0) obj.generateDirection();
                     }
 
                     for (var i = 0; i < enemies.length; i++) {
@@ -642,22 +840,40 @@
                                 x2 = obj2.foe.position.x;
                                 z2 = obj2.foe.position.z;
 
-                                if ((x1-x2)*(x1-x2)+(z1-z2)*(z1-z2) <= 1) {
-                                    if ((x2-x1)*obj1.dx+(z2-z1)*obj1.dz > 0) {
-                                        obj1.dx *= -1;
-                                        obj1.dz *= -1;
-                                    }
+                                vx1 = obj1.dx;
+                                vz1 = obj1.dz;
 
-                                    if ((x1-x2)*obj2.dx+(z1-z2)*obj2.dz > 0) {
-                                        obj2.dx *= -1;
-                                        obj2.dz *= -1;
-                                    }
+                                vx2 = obj2.dx;
+                                vz2 = obj2.dz;
+
+                                var length = Math.sqrt((x1-x2)*(x1-x2)+(z1-z2)*(z1-z2));
+
+                                ex = (x1-x2)/length;
+                                ez = (z1-z2)/length;
+
+                                var scl = ex*(vx1-vx2)+ez*(vz1-vz2);
+
+                                if (length <= 0.8 && scl < 0) {
+                                    obj1.dx += ex;
+                                    obj1.dz += ez;
+
+                                    obj2.dx -= ex;
+                                    obj2.dz -= ez;
                                 }
                             }
                         }
                     }
+
+                    /*for (var i = 0; i < enemies.length; i++) {
+                        obj = enemies[i];
+                        if (obj.hp <= 0) {
+                            obj.setPosition();
+                            obj.hp = 100;
+                        }
+                    }*/
                 }
-            }, 50);
+            }, 30);
+            //30
 
             window.initFunction = async function() {
                 var asyncEngineCreation = async function() {
@@ -668,7 +884,7 @@
                     }
                 }
 
-                if(!window.engine){
+                if (!window.engine) {
                     window.engine = await asyncEngineCreation();
                     startRenderLoop(engine, canvas);
                 }
@@ -679,7 +895,7 @@
 
                 enemies = [];
 
-                for (var i = 0; i < 10; i++) {
+                for (var i = 0; i < 8; i++) {
                     enemies.push(new Enemy());
 
                     obj = enemies[i];
@@ -688,7 +904,8 @@
 
                 for (var i = 0; i < enemies.length; i++) {
                     obj = enemies[i];
-                    obj.generateCoords();
+
+                    obj.generateDirection();
                 }
 
                 scene.onPointerObservable.add((pointerInfo) => {
@@ -707,84 +924,7 @@
                         var mx = pointerInfo.event.movementX;
                         var my = pointerInfo.event.movementY;
 
-                        var x = 0;
-                        var z = 0;
-
-                        var sx = 0;
-                        var sz = 0;
-
-                        var px = 0;
-                        var pz = 0;
-
-                        var xs = 0;
-                        var ys = 0;
-
-                        var radius = 0.49;
-                        var pi = 0;
-                        var length = 0;
-
-                        var len = Math.sqrt(mx*mx+my*my);
-
-                        if (len > 0) {
-                            var dx = div*my/len;
-                            var dz = div*mx/len;
-
-                            character.position.x += dx;
-                            character.position.z += dz;
-
-                            for (var j = 0; j < 10; j++) {
-                                x = character.position.x;
-                                z = character.position.z;
-
-                                for (var i = 0; i < 360; i += 10) {
-                                    pi = i*Math.PI/180;
-                                    px = radius*Math.sin(pi);
-                                    pz = radius*Math.cos(pi);
-
-                                    xs = Math.floor(z+pz+lab.width/2+radius);
-                                    ys = Math.floor(x+px+lab.height/2+radius);
-
-                                    if (lab.get(xs, ys) === 1) {
-                                        sx -= px;
-                                        sz -= pz;
-                                    }
-                                }
-
-                                length = Math.sqrt(sx*sx+sz*sz);
-
-                                if (length !== 0) {
-                                    sx /= length;
-                                    sz /= length;
-
-                                    character.position.x += sx*div/10;
-                                    character.position.z += sz*div/10;
-                                }
-                            }
-                        }
-
-                        /*if (dx*dx+dz*dz <= div) {
-                            if (Math.abs(mx) > Math.abs(my)) {
-                                if (mx > 0) {
-                                    character.position.x += dx;
-                                    character.position.z += dz;
-                                }
-
-                                if (mx < 0) {
-                                    character.position.x += dx;
-                                    character.position.z += dz;
-                                }
-                            } else {
-                                if (my < 0) {
-                                    character.position.x += dx;
-                                    character.position.z += dz;
-                                }
-
-                                if (my > 0) {
-                                    player.x = xy[3][0];
-                                    player.y = xy[3][1];
-                                }
-                            }
-                        }*/
+                        player.movePlayer(my, mx);
                     }
                 });
 
