@@ -789,7 +789,7 @@
 
                             if (complexity >= 0.5) {
                                 complexity -= 0.05;
-                                div1 *= complexity;
+                                div1 = 0.1*complexity;
                             }
                         }
                     }
@@ -804,7 +804,7 @@
                                 scene.dispose();
                                 camera = null;
                                 complexity += 0.5;
-                                div1 *= complexity;
+                                div1 = 0.1*complexity;
 
                                 initFunction().then(() => {
                                     sceneToRender = scene;
